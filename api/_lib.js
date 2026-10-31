@@ -1,5 +1,4 @@
-// Shared helpers for Shielded-Race leaderboard API (Vercel serverless functions).
-// Uses Upstash Redis REST API configured in Vercel environment variables.
+// Shared helpers for Shielded Car Race API (Vercel serverless functions).
 const crypto = require("crypto");
 
 const findEnv = (re) => {
@@ -15,8 +14,8 @@ const DB_TOKEN =
   process.env.UPSTASH_REDIS_REST_TOKEN ||
   findEnv(/REST_API_TOKEN$|REST_TOKEN$/);
 
-// Dedicated namespace for the car-racing game; does not mix with Forest Run scores.
-const KEY = "shielded-race:leaderboard";
+// Dedicated car-race namespace: never mixes with Forest Run or other game scores.
+const KEY = "shielded-car-race:leaderboard";
 
 async function redis(cmd) {
   if (!DB_URL || !DB_TOKEN)
@@ -36,7 +35,6 @@ async function redis(cmd) {
   if (j.error) throw new Error(j.error);
   return j.result;
 }
-
 const secret = () => process.env.LB_SECRET || DB_TOKEN || "dev-secret";
 const sign = (s) =>
   crypto.createHmac("sha256", secret()).update(s).digest("hex").slice(0, 32);
@@ -47,7 +45,6 @@ function json(res, code, obj) {
   res.setHeader("Cache-Control", "no-store");
   res.end(JSON.stringify(obj));
 }
-
 async function top(n = 10) {
   const r = await redis(["ZREVRANGE", KEY, 0, n - 1, "WITHSCORES"]);
   const out = [];
@@ -55,5 +52,4 @@ async function top(n = 10) {
     out.push({ handle: r[i], score: Math.round(+r[i + 1]) });
   return out;
 }
-
 module.exports = { redis, sign, json, top, KEY };
